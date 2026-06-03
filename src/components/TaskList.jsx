@@ -1,36 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Trash2, CheckCircle, Circle, Clock, CheckSquare } from 'lucide-react';
 
-const TaskList = () => {
-  const [tasks, setTasks] = useState(() => {
-    try {
-      const saved = localStorage.getItem('tasks');
-      const parsed = saved ? JSON.parse(saved) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-      console.error("Error loading tasks:", e);
-      return [];
-    }
-  });
+const TaskList = ({ tasks, setTasks }) => {
   const [newTask, setNewTask] = useState('');
   const [priority, setPriority] = useState('medium');
 
-  useEffect(() => {
-    localStorage.setItem('tasks', JSON.stringify(tasks));
-  }, [tasks]);
-
   const addTask = (e) => {
     e.preventDefault();
-    console.log("Adding task:", newTask, "with priority:", priority);
-    if (!newTask.trim()) return;
+    const trimmedTask = newTask.trim();
+    if (!trimmedTask) return;
+
     const newTaskObj = { 
       id: Date.now(), 
-      text: newTask, 
+      text: trimmedTask, 
       completed: false, 
       priority: priority,
-      createdAt: new Date() 
+      createdAt: new Date().toISOString() 
     };
-    setTasks(prevTasks => [...prevTasks, newTaskObj]);
+
+    setTasks(prev => [...prev, newTaskObj]);
     setNewTask('');
     setPriority('medium');
   };
@@ -42,15 +30,17 @@ const TaskList = () => {
   };
 
   const toggleTask = (id) => {
-    setTasks(
-      tasks.map((task) =>
+    setTasks(prev =>
+      prev.map((task) =>
         task.id === id ? { ...task, completed: !task.completed } : task
       )
     );
   };
 
   const deleteTask = (id) => {
-    setTasks(tasks.filter((task) => task.id !== id));
+    if (window.confirm('Bạn có chắc muốn xóa công việc này?')) {
+      setTasks(prev => prev.filter((task) => task.id !== id));
+    }
   };
 
   return (
@@ -62,88 +52,91 @@ const TaskList = () => {
         </div>
       </div>
 
-      <form onSubmit={addTask} className="flex flex-col gap-3 mb-8">
-        <div className="flex gap-2">
+      <form onSubmit={addTask} className="flex flex-col gap-4 mb-10 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="flex gap-3">
           <input
             type="text"
             value={newTask}
             onChange={(e) => setNewTask(e.target.value)}
-            placeholder="Thêm công việc mới..."
-            className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+            placeholder="Nhập công việc mới và nhấn Enter..."
+            className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all text-gray-700"
+            autoFocus
           />
           <button
             type="submit"
-            className="bg-primary-600 text-white px-6 py-3 rounded-xl hover:bg-primary-700 flex items-center gap-2 font-medium transition-colors"
+            className="bg-primary-600 text-white px-8 py-3 rounded-xl hover:bg-primary-700 flex items-center gap-2 font-bold shadow-lg shadow-primary-100 transition-all active:scale-95"
           >
             <Plus className="w-5 h-5" />
-            Thêm
+            THÊM
           </button>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-500 font-medium">Ưu tiên:</span>
-          {Object.entries(priorities).map(([key, value]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setPriority(key)}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                priority === key
-                  ? `${value.bg} ${value.color} ${value.border} ring-2 ring-offset-1 ring-primary-100`
-                  : 'bg-white text-gray-400 border-gray-100 hover:border-gray-200'
-              }`}
-            >
-              {value.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Mức độ ưu tiên:</span>
+          <div className="flex gap-2">
+            {Object.entries(priorities).map(([key, value]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setPriority(key)}
+                className={`px-5 py-2 rounded-xl text-xs font-bold border transition-all ${
+                  priority === key
+                    ? `${value.bg} ${value.color} ${value.border} ring-2 ring-offset-1 ring-primary-100`
+                    : 'bg-gray-50 text-gray-400 border-transparent hover:bg-gray-100'
+                }`}
+              >
+                {value.label.toUpperCase()}
+              </button>
+            ))}
+          </div>
         </div>
       </form>
 
       <div className="space-y-3">
         {tasks.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
-            <CheckSquare className="w-12 h-12 mx-auto mb-4 opacity-20" />
-            <p>Chưa có công việc nào. Hãy thêm công việc mới!</p>
+          <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+            <CheckSquare className="w-16 h-16 mx-auto mb-4 text-gray-200" />
+            <p className="text-gray-400 font-medium text-lg">Hôm nay bạn cần làm gì?</p>
+            <p className="text-gray-300 text-sm mt-1">Hãy thêm công việc đầu tiên của bạn</p>
           </div>
         ) : (
           [...tasks]
             .sort((a, b) => {
               if (a.completed !== b.completed) return a.completed ? 1 : -1;
               const pOrder = { high: 0, medium: 1, low: 2 };
-              if (a.priority !== b.priority) return pOrder[a.priority || 'medium'] - pOrder[b.priority || 'medium'];
-              return b.id - a.id;
+              return pOrder[a.priority || 'medium'] - pOrder[b.priority || 'medium'];
             })
             .map((task) => (
               <div
                 key={task.id}
-                className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
+                className={`group flex items-center gap-4 p-5 rounded-2xl border transition-all ${
                   task.completed
-                    ? 'bg-gray-50 border-gray-100'
-                    : 'bg-white border-gray-200 hover:shadow-md'
+                    ? 'bg-gray-50/50 border-gray-100 opacity-75'
+                    : 'bg-white border-gray-100 hover:border-primary-100 hover:shadow-xl hover:shadow-gray-100'
                 }`}
               >
                 <button
                   onClick={() => toggleTask(task.id)}
-                  className={`transition-colors ${
+                  className={`transition-all transform hover:scale-110 ${
                     task.completed ? 'text-green-500' : 'text-gray-300 hover:text-primary-500'
                   }`}
                 >
                   {task.completed ? (
-                    <CheckCircle className="w-6 h-6" />
+                    <CheckCircle className="w-7 h-7" />
                   ) : (
-                    <Circle className="w-6 h-6" />
+                    <Circle className="w-7 h-7" />
                   )}
                 </button>
                 <div className="flex-1 flex flex-col">
                   <span
-                    className={`text-lg ${
-                      task.completed ? 'text-gray-400 line-through' : 'text-gray-700'
+                    className={`text-lg font-medium ${
+                      task.completed ? 'text-gray-400 line-through' : 'text-gray-800'
                     }`}
                   >
                     {task.text}
                   </span>
                   {!task.completed && (
-                    <div className="flex gap-2 mt-1">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${priorities[task.priority || 'medium'].bg} ${priorities[task.priority || 'medium'].color} border ${priorities[task.priority || 'medium'].border}`}>
+                    <div className="flex gap-2 mt-1.5">
+                      <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-widest ${priorities[task.priority || 'medium'].bg} ${priorities[task.priority || 'medium'].color} border ${priorities[task.priority || 'medium'].border}`}>
                         {priorities[task.priority || 'medium'].label}
                       </span>
                     </div>
@@ -151,7 +144,7 @@ const TaskList = () => {
                 </div>
                 <button
                   onClick={() => deleteTask(task.id)}
-                  className="text-gray-300 hover:text-red-500 transition-colors p-2"
+                  className="text-gray-200 hover:text-red-500 transition-all p-2 group-hover:opacity-100"
                 >
                   <Trash2 className="w-5 h-5" />
                 </button>

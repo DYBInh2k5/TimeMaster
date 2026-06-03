@@ -1,17 +1,7 @@
 import React from 'react';
 import { CheckCircle2, Clock, Calendar, TrendingUp } from 'lucide-react';
 
-const Dashboard = () => {
-  const getTasks = () => {
-    try {
-      const saved = localStorage.getItem('tasks');
-      const parsed = saved ? JSON.parse(saved) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-      return [];
-    }
-  };
-
+const Dashboard = ({ tasks }) => {
   const getSessions = () => {
     try {
       const saved = localStorage.getItem('pomodoro_sessions');
@@ -22,7 +12,6 @@ const Dashboard = () => {
     }
   };
 
-  const tasks = getTasks();
   const sessions = getSessions();
   
   const completedTasks = tasks.filter(t => t.completed).length;
