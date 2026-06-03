@@ -3,8 +3,14 @@ import { Plus, Trash2, CheckCircle, Circle, Clock, CheckSquare } from 'lucide-re
 
 const TaskList = () => {
   const [tasks, setTasks] = useState(() => {
-    const saved = localStorage.getItem('tasks');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('tasks');
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      console.error("Error loading tasks:", e);
+      return [];
+    }
   });
   const [newTask, setNewTask] = useState('');
   const [priority, setPriority] = useState('medium');
@@ -15,17 +21,16 @@ const TaskList = () => {
 
   const addTask = (e) => {
     e.preventDefault();
+    console.log("Adding task:", newTask, "with priority:", priority);
     if (!newTask.trim()) return;
-    setTasks([
-      ...tasks,
-      { 
-        id: Date.now(), 
-        text: newTask, 
-        completed: false, 
-        priority: priority,
-        createdAt: new Date() 
-      },
-    ]);
+    const newTaskObj = { 
+      id: Date.now(), 
+      text: newTask, 
+      completed: false, 
+      priority: priority,
+      createdAt: new Date() 
+    };
+    setTasks(prevTasks => [...prevTasks, newTaskObj]);
     setNewTask('');
     setPriority('medium');
   };
@@ -100,7 +105,7 @@ const TaskList = () => {
             <p>Chưa có công việc nào. Hãy thêm công việc mới!</p>
           </div>
         ) : (
-          tasks
+          [...tasks]
             .sort((a, b) => {
               if (a.completed !== b.completed) return a.completed ? 1 : -1;
               const pOrder = { high: 0, medium: 1, low: 2 };
